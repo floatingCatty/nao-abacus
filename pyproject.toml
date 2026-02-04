@@ -1,0 +1,26 @@
+[build-system]
+requires = ["scikit-build-core", "pybind11", "numpy"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "op2c"
+version = "0.1.0"
+description = "Python bindings for nao-abacus op2c"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "numpy",
+]
+
+[tool.scikit-build]
+cmake.verbose = true
+logging.level = "INFO"
+# We need to tell scikit-build-core to include op2c directory as the package
+# automatic discovery might work if layouts are standard.
+# Our layout: 
+#   source_estate/__init__.py
+#   source_estate/op2c_wrapper.py
+#   bindings/py_estate.cpp -> _estate.so (should go into source_estate)
+
+[tool.scikit-build.cmake.define]
+INT2C_USE_MKL = "OFF"

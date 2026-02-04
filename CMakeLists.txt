@@ -178,3 +178,4 @@ install(DIRECTORY source_cell/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/int2c/sou
 install(DIRECTORY source_estate/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/int2c/source_estate FILES_MATCHING PATTERN "*.h")
 install(FILES source_cell/read_pp.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/int2c/source_cell)
 
+add_subdirectory(bindings)
