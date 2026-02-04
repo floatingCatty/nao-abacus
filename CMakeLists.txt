@@ -9,9 +9,22 @@ project(
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../cmake")
 include(GNUInstallDirs)
 
+option(BUILD_TESTING "Build tests" OFF)
 if (PROJECT_IS_TOP_LEVEL)
-  find_package(GTest REQUIRED)
-  find_package(MPI REQUIRED)
+  if(BUILD_TESTING)
+    find_package(GTest REQUIRED)
+  endif()
+  find_package(MPI) # Try finding MPI, but don't error out yet
+endif()
+
+if(NOT TARGET MPI::MPI_CXX)
+  # If MPI not found, define dummy library for serial build
+  add_library(MPI::MPI_CXX INTERFACE IMPORTED)
+  # Note: __MPI definition should only be added if MPI IS found.
+else()
+  # Only add __MPI for global if we found it and want to use it? 
+  # Actually, base relies on __MPI definition. 
+  # If we want serial build, we must NOT define __MPI.
 endif()
 # # include_directories(${MPI_CXX_INCLUDE_PATH})
 # add_compile_definitions(__MPI)
@@ -104,30 +117,35 @@ add_subdirectory(${SOURCE_DIR}/source_cell ${CELL_BINARY_DIR})
 set(ESTATE_BINARY_DIR "${PROJECT_SOURCE_DIR}/build/estate")
 add_subdirectory(${SOURCE_DIR}/source_estate ${ESTATE_BINARY_DIR})
 
-add_executable(test_nao test/test.cpp)
-target_link_libraries(test_nao PRIVATE base numerical_atomic_orbitals MPI::MPI_CXX GTest::gtest)
-
-add_executable(test_pos test/test_pos.cpp)
-target_link_libraries(test_pos PRIVATE base numerical_atomic_orbitals MPI::MPI_CXX GTest::gtest)
-
-add_executable(test_pseudo test/test_pseudo.cpp)
-target_link_libraries(test_pseudo PRIVATE base numerical_atomic_orbitals estate cell MPI::MPI_CXX GTest::gtest)
-target_compile_definitions(test_pseudo PRIVATE TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/test/pporb/")
-
-add_executable(test_two_center_bundle test/test_two_center_bundle.cpp)
-target_link_libraries(test_two_center_bundle PRIVATE base numerical_atomic_orbitals estate cell MPI::MPI_CXX GTest::gtest)
-target_compile_definitions(test_two_center_bundle PRIVATE TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/test/pporb/")
-
-add_executable(test_api_usage test/test_api_usage.cpp)
-target_link_libraries(test_api_usage PRIVATE base numerical_atomic_orbitals estate cell MPI::MPI_CXX GTest::gtest)
-target_compile_definitions(test_api_usage PRIVATE TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/test/pporb/")
-
-add_executable(test_op2c test/test_op2c.cpp)
-target_link_libraries(test_op2c PRIVATE base numerical_atomic_orbitals estate cell MPI::MPI_CXX GTest::gtest)
-target_compile_definitions(test_op2c PRIVATE TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/test/pporb/")
+if(BUILD_TESTING)
+    add_executable(test_nao test/test.cpp)
+    target_link_libraries(test_nao PRIVATE base numerical_atomic_orbitals MPI::MPI_CXX GTest::gtest)
+    
+    add_executable(test_pos test/test_pos.cpp)
+    target_link_libraries(test_pos PRIVATE base numerical_atomic_orbitals MPI::MPI_CXX GTest::gtest)
+    
+    add_executable(test_pseudo test/test_pseudo.cpp)
+    target_link_libraries(test_pseudo PRIVATE base numerical_atomic_orbitals estate cell MPI::MPI_CXX GTest::gtest)
+    target_compile_definitions(test_pseudo PRIVATE TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/test/pporb/")
+    
+    add_executable(test_two_center_bundle test/test_two_center_bundle.cpp)
+    target_link_libraries(test_two_center_bundle PRIVATE base numerical_atomic_orbitals estate cell MPI::MPI_CXX GTest::gtest)
+    target_compile_definitions(test_two_center_bundle PRIVATE TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/test/pporb/")
+    
+    add_executable(test_api_usage test/test_api_usage.cpp)
+    target_link_libraries(test_api_usage PRIVATE base numerical_atomic_orbitals estate cell MPI::MPI_CXX GTest::gtest)
+    target_compile_definitions(test_api_usage PRIVATE TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/test/pporb/")
+    
+    add_executable(test_op2c test/test_op2c.cpp)
+    target_link_libraries(test_op2c PRIVATE base numerical_atomic_orbitals estate cell MPI::MPI_CXX GTest::gtest)
+    target_compile_definitions(test_op2c PRIVATE TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/test/pporb/")
+endif()
 
 # --- Target-based definitions ---
-target_compile_definitions(base PUBLIC __MPI __LCAO)
+target_compile_definitions(base PUBLIC __LCAO)
+if(TARGET MPI::MPI_CXX AND MPI_FOUND)
+    target_compile_definitions(base PUBLIC __MPI)
+endif()
 if(INT2C_USE_MKL)
     target_compile_definitions(base PUBLIC __MKL)
 endif()

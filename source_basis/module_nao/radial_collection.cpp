@@ -244,7 +244,9 @@ void RadialCollection::build(const int ntype, BetaRadials* const nls)
 void RadialCollection::build(const int nfile, const std::string* const file, const char ftype, const int p, const int pm, MPI_Comm comm)
 {
     int my_rank = 0;
+#ifdef __MPI
     MPI_Comm_rank(comm, &my_rank);
+#endif
     cleanup();
 
     ntype_ = nfile;

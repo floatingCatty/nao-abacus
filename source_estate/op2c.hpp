@@ -22,6 +22,9 @@
 #include <complex>
 #ifdef __MPI
     #include <mpi.h>
+#else
+    typedef int MPI_Comm;
+    #define MPI_COMM_WORLD 0
 #endif
 
 class Op2c
