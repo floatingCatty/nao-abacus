@@ -51,16 +51,18 @@ import numpy as np
 
 # 1. Initialize Op2C
 # params: ntype, nspin, lspinorb, orbital_dir, orbit_files, pseudo_dir, pseudo_files, ...
-# Note: For serial execution, `comm` can be omitted or set to None.
+# Note: psd_dir, psd_name, and log_file are optional.
+# If omitted, Op2C operates in orbital-only mode (e.g. for overlap).
 op = Op2C(
     ntype=1, 
     nspin=1, 
     lspinorb=False,
     orb_dir="./path/to/orbitals/", 
     orb_name=["C_orb_fname.orb"],
-    psd_dir="./path/to/pseudos/", 
-    psd_name=["C_pseudo_fname.upf"],
-    log_file="op2c.log"
+    # Optional:
+    # psd_dir="./path/to/pseudos/", 
+    # psd_name=["C_pseudo_fname.upf"],
+    # log_file="op2c.log"
 )
 
 # 2. Define Inputs

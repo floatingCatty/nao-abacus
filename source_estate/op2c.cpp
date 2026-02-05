@@ -24,7 +24,7 @@ Op2c::Op2c(size_t ntype, int nspin, bool lspinorb,
         exit(1);
 #endif
     }
-    if (psd_name.size() != ntype){
+    if (!psd_name.empty() && psd_name.size() != ntype){
         if (rank == 0){
             std::cout << "Error: psd_name.size() != ntype" << std::endl;
         }
@@ -42,23 +42,26 @@ Op2c::Op2c(size_t ntype, int nspin, bool lspinorb,
     ModuleBase::Logger logger(log_file.empty() ? std::cout : ofs);
 
     // std::cout << "rank: " << rank <<" build_orb " << orb_name[0] << " " << orb_dir << std::endl;
+    // std::cout << "rank: " << rank <<" build_orb " << orb_name[0] << " " << orb_dir << std::endl;
     tcbd.build_orb(ntype, orb_name.data(), orb_dir, comm);
     // std::cout << "rank: " << rank <<" build_orb done" << std::endl;
 
-    //TODO: problem, how does this routine setup the tightest rcut of pseudos?
-    // it should be larger than the largest rcut of pseudos
-    psds.resize(ntype);
-    
-    // std::cout << "start reading psd " << std::endl;
-    read_pseudo(psd_dir, psd_name, "auto", 10.0, false, 0.0, logger, psds, comm);
-    // std::cout << "end reading psd " << std::endl;
+    if(!psd_name.empty()) {
+        //TODO: problem, how does this routine setup the tightest rcut of pseudos?
+        // it should be larger than the largest rcut of pseudos
+        psds.resize(ntype);
+        
+        // std::cout << "start reading psd " << std::endl;
+        read_pseudo(psd_dir, psd_name, "auto", 10.0, false, 0.0, logger, psds, comm);
+        // std::cout << "end reading psd " << std::endl;
 
-    std::vector<BetaRadials> beta_radials(ntype);
-    for(int itype=0; itype<ntype; ++itype){
-        beta_radials[itype] = psds[itype].beta_radials;
+        std::vector<BetaRadials> beta_radials(ntype);
+        for(int itype=0; itype<ntype; ++itype){
+            beta_radials[itype] = psds[itype].beta_radials;
+        }
+        // std::cout << "build_beta" << std::endl;
+        tcbd.build_beta(ntype, beta_radials.data());
     }
-    // std::cout << "build_beta" << std::endl;
-    tcbd.build_beta(ntype, beta_radials.data());
 
     // std::cout << "tabulate" << std::endl;
     tcbd.tabulate();
@@ -80,18 +83,20 @@ Op2c::Op2c(size_t ntype, int nspin, bool lspinorb,
         }
     }
 
-    // std::cout << "beta_map" << std::endl;
-    // build the beta mapping table: [itype][ibeta] -> (l, zeta, m)
-    beta_map.resize({(int)ntype, tcbd.beta_->nphi_max(), 3});
-    for(int itype=0; itype<ntype; ++itype){
-        int iphi = 0;
-        for(int l=0; l<=tcbd.beta_->lmax(itype); ++l){
-            for(int izeta=0; izeta<tcbd.beta_->nzeta(itype, l); ++izeta){
-                for(int m=-l; m<=l; ++m){
-                    beta_map.get_value<int>(itype, iphi, 0) = l;
-                    beta_map.get_value<int>(itype, iphi, 1) = izeta;
-                    beta_map.get_value<int>(itype, iphi, 2) = m;
-                    iphi++;
+    if(!psd_name.empty()) {
+        // std::cout << "beta_map" << std::endl;
+        // build the beta mapping table: [itype][ibeta] -> (l, zeta, m)
+        beta_map.resize({(int)ntype, tcbd.beta_->nphi_max(), 3});
+        for(int itype=0; itype<ntype; ++itype){
+            int iphi = 0;
+            for(int l=0; l<=tcbd.beta_->lmax(itype); ++l){
+                for(int izeta=0; izeta<tcbd.beta_->nzeta(itype, l); ++izeta){
+                    for(int m=-l; m<=l; ++m){
+                        beta_map.get_value<int>(itype, iphi, 0) = l;
+                        beta_map.get_value<int>(itype, iphi, 1) = izeta;
+                        beta_map.get_value<int>(itype, iphi, 2) = m;
+                        iphi++;
+                    }
                 }
             }
         }
@@ -251,6 +256,12 @@ void Op2c::orb_r_beta(
     int shift;
     int m_phase;
     double cutoff;
+    
+    if(!tcbd.beta_) {
+        std::cout << "Error: Beta radials not initialized (missing pseudo?)" << std::endl;
+        return;
+    }
+    
     knorb = tcbd.beta_->nphi(ktype);
 
     // v, vx, vy, vz: itype.size() * (inorb, knorb)
@@ -314,6 +325,12 @@ void Op2c::ncomm_IKJ(
     int inorb, jnorb, knorb, shift, s1, s2;
     inorb = tcbd.orb_->nphi(itype);
     jnorb = tcbd.orb_->nphi(jtype);
+    
+    if(!tcbd.beta_) {
+        std::cout << "Error: Beta radials not initialized (missing pseudo?)" << std::endl;
+        return;
+    }
+
     knorb = tcbd.beta_->nphi(ktype);
 
 
@@ -421,5 +438,7 @@ double Op2c::get_orb_rcut_max(int itype) const {
 }
 
 double Op2c::get_beta_rcut_max(int itype) const {
-    return tcbd.beta_->rcut_max(itype);
+    if(tcbd.beta_)
+        return tcbd.beta_->rcut_max(itype);
+    return 0.0;
 }

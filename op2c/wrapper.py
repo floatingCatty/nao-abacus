@@ -8,8 +8,8 @@ class Op2C:
     """
     def __init__(self, ntype, nspin, lspinorb, 
                  orb_dir, orb_name, 
-                 psd_dir, psd_name, 
-                 log_file, comm=None):
+                 psd_dir="", psd_name=None, 
+                 log_file="", comm=None):
         """
         Initialize Op2C.
 
@@ -40,10 +40,14 @@ class Op2C:
              if hasattr(comm, 'py2f'):
                  self.mpi_handle = comm.py2f()
         
+        if psd_name is None:
+            psd_name = []
+            
         self.op2c = _estate.Op2c(ntype, nspin, lspinorb, 
                                  orb_dir, orb_name, 
                                  psd_dir, psd_name, 
                                  log_file, self.mpi_handle)
+                                 
 
     def overlap(self, itype, jtype, Rij, is_transpose=False):
         """

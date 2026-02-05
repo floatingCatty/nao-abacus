@@ -116,8 +116,9 @@ void bind_op2c(py::module &m) {
         }),
         py::arg("ntype"), py::arg("nspin"), py::arg("lspinorb"),
         py::arg("orb_dir"), py::arg("orb_name"),
-        py::arg("psd_dir"), py::arg("psd_name"),
-        py::arg("log_file"), py::arg("mpi_handle") = 0)
+
+        py::arg("psd_dir") = "", py::arg("psd_name") = std::vector<std::string>(),
+        py::arg("log_file") = "", py::arg("mpi_handle") = 0)
         
         .def("overlap", [](Op2c& self, size_t itype, size_t jtype, ModuleBase::Vector3<double> Rij, bool is_transpose) {
             std::vector<double> v;
